@@ -1,5 +1,6 @@
 # Veritas — Fake News & Misinformation Detector
  Deployed link - https://fake-news-and-misinformation-detector-1.onrender.com
+ 
 **An AI-powered, ensemble-based fake news detection system built with Flask.**
 Every article is run through a three-stage AI pipeline — Claim Extraction → Cross Verification → Semantic Analysis — and scored by a transparent, formula-driven ensemble engine to produce a Credibility Score and a final verdict: **True**, **Suspect**, or **False**.
 
