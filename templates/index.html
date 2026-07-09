@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Veritas — Fake News & Misinformation Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="grain-overlay"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">VER</span>
+    <div class="brand-text">
+      <span class="brand-title">Veritas</span>
+      <span class="brand-sub">Fake News &amp; Misinformation Detector</span>
+    </div>
+  </div>
+
+  <nav class="mode-switch" role="tablist" aria-label="Detection mode">
+    <button class="mode-btn is-active" data-mode="single" role="tab" aria-selected="true">
+      <span class="mode-tag">01</span> Single Article
+    </button>
+    <button class="mode-btn" data-mode="bulk" role="tab" aria-selected="false">
+      <span class="mode-tag">02</span> Bulk Detection
+    </button>
+  </nav>
+
+  <div class="engine-select">
+    <label for="apiMode">Pipeline Engine</label>
+    <select id="apiMode">
+      <option value="offline" selected>Offline — Rule-Based (Free)</option>
+      <option value="nvidia">NVIDIA — openai/gpt-oss-20b</option>
+      <option value="claude">Anthropic Claude</option>
+    </select>
+    <input id="apiKey" type="password" placeholder="Paste API key…" class="api-key-input hidden" autocomplete="off" />
+  </div>
+</header>
+
+<main class="workspace">
+
+  <!-- =========================== MODE 1: SINGLE ARTICLE =========================== -->
+  <section id="panel-single" class="mode-panel is-active">
+
+    <div class="col col-input">
+      <div class="dossier-card">
+        <div class="dossier-card-header">
+          <span class="eyebrow">Case Intake</span>
+          <h2>Submit an Article</h2>
+        </div>
+
+        <form id="singleForm" class="form-grid">
+          <label class="field">
+            <span>Article Title</span>
+            <input type="text" name="title" id="f-title" placeholder="e.g. Scientists Confirm New Findings on Arctic Ice Melt" required />
+          </label>
+
+          <label class="field">
+            <span>Article Body</span>
+            <textarea name="text" id="f-text" rows="10" placeholder="Paste the full article text here…" required></textarea>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Source Name</span>
+              <input type="text" name="source" id="f-source" placeholder="e.g. Reuters" required />
+            </label>
+            <label class="field">
+              <span>Topic</span>
+              <input type="text" name="topic" id="f-topic" placeholder="e.g. Climate" />
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary" id="analyzeBtn">
+            <span>Analyze Article</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="pipeline-tracker" id="pipelineTracker">
+        <div class="pipeline-step" data-step="A">
+          <div class="pipeline-dot"></div>
+          <div class="pipeline-label">
+            <span class="pipeline-letter">A</span>
+            <span>Claim Extraction</span>
+          </div>
+        </div>
+        <div class="pipeline-line"></div>
+        <div class="pipeline-step" data-step="B">
+          <div class="pipeline-dot"></div>
+          <div class="pipeline-label">
+            <span class="pipeline-letter">B</span>
+            <span>Cross Verification</span>
+          </div>
+        </div>
+        <div class="pipeline-line"></div>
+        <div class="pipeline-step" data-step="C">
+          <div class="pipeline-dot"></div>
+          <div class="pipeline-label">
+            <span class="pipeline-letter">C</span>
+            <span>Semantic Analysis</span>
+          </div>
+        </div>
+        <div class="pipeline-line"></div>
+        <div class="pipeline-step" data-step="D">
+          <div class="pipeline-dot"></div>
+          <div class="pipeline-label">
+            <span class="pipeline-letter">Σ</span>
+            <span>Ensemble Verdict</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col col-results">
+      <div id="singleEmptyState" class="empty-state">
+        <div class="empty-glyph">◐</div>
+        <h3>No case open</h3>
+        <p>Submit an article on the left to run the three-stage verification pipeline and generate a credibility dossier.</p>
+      </div>
+
+      <div id="singleResults" class="results-dossier hidden">
+
+        <div class="verdict-strip">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 220 130" class="gauge-svg" id="gaugeSvg">
+              <path d="M 20 110 A 90 90 0 0 1 200 110" class="gauge-track" />
+              <path d="M 20 110 A 90 90 0 0 1 200 110" class="gauge-fill" id="gaugeFill" />
+              <line x1="110" y1="110" x2="110" y2="30" class="gauge-needle" id="gaugeNeedle" />
+              <circle cx="110" cy="110" r="7" class="gauge-pivot" />
+            </svg>
+            <div class="gauge-score" id="gaugeScore">—</div>
+            <div class="gauge-caption">Credibility Score</div>
+          </div>
+
+          <div class="verdict-stamp-wrap">
+            <div class="verdict-stamp" id="verdictStamp">PENDING</div>
+            <div class="verdict-meta" id="verdictMeta"></div>
+          </div>
+        </div>
+
+        <div class="metric-tags" id="metricTags"></div>
+
+        <div class="semantic-grid" id="semanticGrid"></div>
+
+        <div class="claims-section">
+          <div class="section-heading">
+            <span class="eyebrow">Evidence Log</span>
+            <h3>Extracted Claims &amp; Corroboration</h3>
+          </div>
+          <div id="claimsList" class="claims-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== MODE 2: BULK DETECTION =========================== -->
+  <section id="panel-bulk" class="mode-panel">
+    <div class="dossier-card bulk-upload-card">
+      <div class="dossier-card-header">
+        <span class="eyebrow">Batch Intake</span>
+        <h2>Upload Dataset (CSV)</h2>
+      </div>
+
+      <p class="hint-text">Required columns: <code>article_id, title, text, source, topic</code>. Optional: <code>ground_truth</code> (True / Suspect / False) to compute accuracy metrics.</p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="csvInput" accept=".csv" hidden />
+        <div class="dropzone-glyph">⤓</div>
+        <p><strong>Drop CSV here</strong> or click to browse</p>
+        <span class="dropzone-file" id="dropzoneFile">No file selected</span>
+      </div>
+
+      <button class="btn-primary" id="bulkAnalyzeBtn">
+        <span>Run Bulk Detection</span>
+      </button>
+
+      <div class="progress-bar-wrap hidden" id="bulkProgressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="bulkProgressFill"></div></div>
+        <span id="bulkProgressLabel">Processing rows…</span>
+      </div>
+    </div>
+
+    <div id="bulkResults" class="bulk-results hidden">
+
+      <div class="metrics-row" id="metricsRow"></div>
+
+      <div class="confusion-wrap" id="confusionWrap"></div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="eyebrow">Batch Ledger</span>
+          <h3>Per-Article Results</h3>
+          <button class="btn-secondary" id="downloadCsvBtn">Download Results CSV</button>
+        </div>
+        <div class="table-scroll">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Title</th><th>Topic</th><th>Source</th>
+                <th>Score</th><th>Vote</th><th>Claims</th><th>Disagreement</th>
+                <th>Ground Truth</th><th>Match</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<template id="claimCardTemplate">
+  <div class="claim-card">
+    <button class="claim-card-head" type="button">
+      <span class="claim-id"></span>
+      <span class="claim-statement"></span>
+      <span class="claim-status-badge"></span>
+      <span class="claim-chevron">⌄</span>
+    </button>
+    <div class="claim-card-body">
+      <div class="claim-detail-row"><span class="label">Alleged Source</span><span class="claim-alleged-source"></span></div>
+      <div class="claim-detail-row"><span class="label">Category</span><span class="claim-category"></span></div>
+      <div class="claim-detail-row"><span class="label">Domain Authority</span><span class="claim-authority"></span></div>
+      <div class="claim-detail-row"><span class="label">Confidence</span><span class="claim-confidence"></span></div>
+      <div class="claim-detail-row"><span class="label">Claim Score</span><span class="claim-score"></span></div>
+      <p class="claim-evidence"></p>
+    </div>
+  </div>
+</template>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
